@@ -1,0 +1,8 @@
+# Configuración del lint del contrato (se usa desde .github/workflows/contract-ci.yml)
+extends:
+  - recommended
+rules:
+  # Los servidores localhost son intencionales: el backend corre en local.
+  no-server-example.com: off
+  # Los mensajes WebSocket se referencian desde x-websocket-messages, no desde paths.
+  no-unused-components: off

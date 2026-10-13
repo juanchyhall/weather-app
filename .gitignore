@@ -1,0 +1,42 @@
+# --- General ---
+.DS_Store
+Thumbs.db
+*.log
+.env
+.env.*
+!.env.example
+
+# --- IDE ---
+.idea/
+*.iml
+.vscode/*
+!.vscode/extensions.json
+
+# --- Flutter / Dart ---
+apps/mobile/.dart_tool/
+apps/mobile/.flutter-plugins
+apps/mobile/.flutter-plugins-dependencies
+apps/mobile/build/
+apps/mobile/coverage/
+apps/mobile/**/*.g.dart.bak
+
+# --- Android (dentro de Flutter) ---
+apps/mobile/android/.gradle/
+apps/mobile/android/local.properties
+apps/mobile/android/key.properties
+apps/mobile/android/app/*.jks
+apps/mobile/android/captures/
+
+# --- iOS ---
+apps/mobile/ios/Pods/
+apps/mobile/ios/.symlinks/
+apps/mobile/ios/Flutter/Generated.xcconfig
+
+# --- Kotlin / Gradle (backend) ---
+services/**/.gradle/
+services/**/build/
+services/**/out/
+!services/**/gradle/wrapper/gradle-wrapper.jar
+
+# --- Cursor (preferencias locales, no las compartidas) ---
+.cursor/*.local.*

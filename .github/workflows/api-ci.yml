@@ -1,0 +1,51 @@
+# CI del backend Ktor. Solo corre si cambia services/weather-api
+# y se saltea mientras el proyecto Gradle no exista.
+name: api-ci
+
+on:
+  pull_request:
+    paths:
+      - "services/weather-api/**"
+      - "packages/api-contract/**"
+      - "docker-compose.yml"
+      - ".github/workflows/api-ci.yml"
+  push:
+    branches: [main, develop]
+    paths:
+      - "services/weather-api/**"
+
+jobs:
+  # Detecta si el proyecto ya fue creado (hashFiles no se puede usar en el if de un job).
+  detect:
+    runs-on: ubuntu-latest
+    outputs:
+      exists: ${{ steps.check.outputs.exists }}
+    steps:
+      - uses: actions/checkout@v4
+      - id: check
+        run: |
+          if [ -f "services/weather-api/build.gradle.kts" ]; then echo "exists=true" >> "$GITHUB_OUTPUT"; else echo "exists=false" >> "$GITHUB_OUTPUT"; fi
+
+  test:
+    runs-on: ubuntu-latest
+    needs: detect
+    if: needs.detect.outputs.exists == 'true'
+    defaults:
+      run:
+        working-directory: services/weather-api
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "21"
+      - uses: gradle/actions/setup-gradle@v4
+      - run: chmod +x gradlew
+      - run: ./gradlew test
+
+  docker-build:
+    runs-on: ubuntu-latest
+    needs: test
+    steps:
+      - uses: actions/checkout@v4
+      - run: docker build -t clima-weather-api:ci services/weather-api

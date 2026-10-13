@@ -1,0 +1,242 @@
+openapi: 3.1.0
+info:
+  title: Clima Weather API
+  version: 0.1.0
+  description: |
+    Contrato entre la app Flutter (apps/mobile) y el backend Ktor (services/weather-api).
+    El backend obtiene los datos de Open-Meteo; la app nunca llama a Open-Meteo directamente.
+  license:
+    name: Uso interno / aprendizaje
+    identifier: UNLICENSED
+servers:
+  - url: http://localhost:8080
+    description: Local (docker compose o ./gradlew run)
+  - url: http://10.0.2.2:8080
+    description: Local visto desde el emulador Android
+
+# API pública de uso local: sin autenticación por ahora (ver backlog CLIMA-12).
+security: []
+
+tags:
+  - name: system
+    description: Estado del servicio
+  - name: cities
+    description: Búsqueda de ciudades (geocodificación)
+  - name: weather
+    description: Clima actual, pronóstico y tiempo real
+
+paths:
+  /v1/health:
+    get:
+      tags: [system]
+      summary: Estado del servicio
+      operationId: getHealth
+      responses:
+        "503":
+          description: Servicio no disponible
+        "200":
+          description: Servicio operativo
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Health"
+
+  /v1/cities/search:
+    get:
+      tags: [cities]
+      summary: Buscar ciudades por nombre
+      operationId: searchCities
+      parameters:
+        - name: q
+          in: query
+          required: true
+          schema: { type: string, minLength: 2 }
+          example: Asunción
+        - name: limit
+          in: query
+          schema: { type: integer, minimum: 1, maximum: 20, default: 10 }
+        - name: lang
+          in: query
+          schema: { type: string, default: es }
+      responses:
+        "200":
+          description: Ciudades encontradas (lista vacía si no hay resultados)
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/City"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+
+  /v1/weather:
+    get:
+      tags: [weather]
+      summary: Clima actual y pronóstico de una ubicación
+      operationId: getWeather
+      parameters:
+        - name: lat
+          in: query
+          required: true
+          schema: { type: number, minimum: -90, maximum: 90 }
+        - name: lon
+          in: query
+          required: true
+          schema: { type: number, minimum: -180, maximum: 180 }
+        - name: days
+          in: query
+          schema: { type: integer, minimum: 1, maximum: 16, default: 7 }
+      responses:
+        "200":
+          description: Clima de la ubicación
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/WeatherReport"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "502":
+          description: Open-Meteo no respondió o respondió con error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /v1/live:
+    get:
+      tags: [weather]
+      summary: WebSocket de actualizaciones en tiempo real
+      description: |
+        Se abre con upgrade a WebSocket (ws://host/v1/live).
+        Los mensajes se describen en `x-websocket-messages`.
+      operationId: liveWeather
+      responses:
+        "101":
+          description: Conexión WebSocket establecida
+
+components:
+  responses:
+    BadRequest:
+      description: Parámetros inválidos
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ErrorResponse"
+
+  schemas:
+    Health:
+      type: object
+      required: [status, version]
+      properties:
+        status: { type: string, enum: [ok, degraded] }
+        version: { type: string }
+        cache: { type: string, enum: [redis, memory, unavailable] }
+
+    City:
+      type: object
+      required: [id, name, latitude, longitude, country_code, timezone]
+      properties:
+        id: { type: integer, description: ID de geocodificación de Open-Meteo }
+        name: { type: string }
+        admin1: { type: string, description: Provincia / departamento / estado }
+        country: { type: string }
+        country_code: { type: string, minLength: 2, maxLength: 2 }
+        latitude: { type: number }
+        longitude: { type: number }
+        timezone: { type: string, example: America/Asuncion }
+
+    CurrentWeather:
+      type: object
+      required: [time, temperature_c, weather_code, is_day]
+      properties:
+        time: { type: string, format: date-time }
+        temperature_c: { type: number }
+        apparent_temperature_c: { type: number }
+        relative_humidity: { type: integer, minimum: 0, maximum: 100 }
+        wind_speed_kmh: { type: number }
+        wind_direction_deg: { type: integer, minimum: 0, maximum: 360 }
+        precipitation_mm: { type: number }
+        weather_code: { type: integer, description: Código WMO de Open-Meteo }
+        is_day: { type: boolean }
+
+    DailyForecast:
+      type: object
+      required: [date, temperature_max_c, temperature_min_c, weather_code]
+      properties:
+        date: { type: string, format: date }
+        temperature_max_c: { type: number }
+        temperature_min_c: { type: number }
+        precipitation_probability_max: { type: integer, minimum: 0, maximum: 100 }
+        weather_code: { type: integer }
+        sunrise: { type: string, format: date-time }
+        sunset: { type: string, format: date-time }
+
+    WeatherReport:
+      type: object
+      required: [latitude, longitude, timezone, current, daily, fetched_at, source]
+      properties:
+        latitude: { type: number }
+        longitude: { type: number }
+        timezone: { type: string }
+        current: { $ref: "#/components/schemas/CurrentWeather" }
+        daily:
+          type: array
+          items: { $ref: "#/components/schemas/DailyForecast" }
+        fetched_at: { type: string, format: date-time, description: Cuándo se consultó a Open-Meteo }
+        source: { type: string, enum: [live, cache] }
+
+    ErrorResponse:
+      type: object
+      required: [code, message]
+      properties:
+        code: { type: string, example: INVALID_PARAMETER }
+        message: { type: string }
+
+    # ---- Mensajes WebSocket ----
+    LiveSubscribe:
+      type: object
+      description: Cliente → servidor. Reemplaza la lista de ubicaciones suscriptas.
+      required: [type, locations]
+      properties:
+        type: { const: subscribe }
+        locations:
+          type: array
+          maxItems: 10
+          items:
+            type: object
+            required: [key, lat, lon]
+            properties:
+              key: { type: string, description: Identificador elegido por la app (ej. id de ciudad) }
+              lat: { type: number }
+              lon: { type: number }
+
+    LiveUpdate:
+      type: object
+      description: Servidor → cliente. Se envía al suscribirse y en cada refresco.
+      required: [type, key, current, fetched_at]
+      properties:
+        type: { const: update }
+        key: { type: string }
+        current: { $ref: "#/components/schemas/CurrentWeather" }
+        fetched_at: { type: string, format: date-time }
+
+    LiveError:
+      type: object
+      description: Servidor → cliente.
+      required: [type, code, message]
+      properties:
+        type: { const: error }
+        code: { type: string }
+        message: { type: string }
+
+x-websocket-messages:
+  path: /v1/live
+  client_to_server:
+    - $ref: "#/components/schemas/LiveSubscribe"
+  server_to_client:
+    - $ref: "#/components/schemas/LiveUpdate"
+    - $ref: "#/components/schemas/LiveError"
+  notes: |
+    - El servidor vuelve a consultar cada WEATHER_REFRESH_SECONDS y solo envía si hubo cambios.
+    - Open-Meteo actualiza el dato "actual" cada ~15 minutos; refrescar más seguido no aporta.

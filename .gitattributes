@@ -1,0 +1,9 @@
+# Normaliza finales de línea (evita que gradlew falle dentro de Docker al clonar en Windows)
+* text=auto eol=lf
+*.bat text eol=crlf
+*.cmd text eol=crlf
+gradlew text eol=lf
+*.jar binary
+*.png binary
+*.jpg binary
+*.jks binary

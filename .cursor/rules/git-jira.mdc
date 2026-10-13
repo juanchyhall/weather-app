@@ -1,0 +1,15 @@
+---
+description: Usar al crear ramas, commits, pull requests o al trabajar con tickets de Jira
+alwaysApply: false
+---
+
+# Git + Jira
+
+- Clave de Jira del proyecto: `CLIMA`.
+- Rama: `feature/CLIMA-<n>-<slug>` · `fix/CLIMA-<n>-<slug>` · `chore/CLIMA-<n>-<slug>`.
+- Commit: `CLIMA-<n> <tipo>(<alcance>): <descripción en presente>`
+  - tipos: feat, fix, refactor, test, docs, chore, ci
+  - alcances: mobile, android, api, contract, infra, docs
+- PR: título igual al commit principal; completar `.github/pull_request_template.md`.
+- Nunca `git push --force` sobre `main` ni `develop`.
+- Si hay MCP de Jira disponible, leer el ticket antes de empezar y comentar en él el link del PR al terminar.

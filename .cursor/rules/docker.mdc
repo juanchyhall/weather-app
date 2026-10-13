@@ -1,0 +1,13 @@
+---
+description: Convenciones para Dockerfile y docker-compose
+globs: docker-compose*.yml,services/**/Dockerfile,services/**/.dockerignore
+alwaysApply: false
+---
+
+# Docker
+
+- Builds multi-etapa: compilar con imagen JDK, ejecutar con imagen JRE liviana.
+- No copiar `.env` ni secretos dentro de la imagen.
+- Todo servicio nuevo en `docker-compose.yml` lleva `healthcheck` si otro depende de él.
+- Si cambiás un puerto o nombre de servicio, buscá quién lo usa (`.env.example`, README, app) y actualizalo.
+- Verificar con: `docker compose config` y `docker compose up --build`.

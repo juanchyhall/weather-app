@@ -1,0 +1,19 @@
+---
+description: Contexto general del monorepo de clima y reglas que aplican siempre
+alwaysApply: true
+---
+
+# Contexto del proyecto
+
+- Monorepo de aprendizaje: app de clima en tiempo real.
+- `apps/mobile` = Flutter/Dart · `apps/mobile/android` = Kotlin nativo · `services/weather-api` = Kotlin/Ktor · `packages/api-contract` = OpenAPI.
+- Fuente de datos: Open-Meteo (sin API key). El backend es el único que llama a Open-Meteo; la app solo habla con el backend.
+
+# Siempre
+
+- Antes de editar, decí qué archivos vas a tocar y qué otras partes dependen de ellos.
+- Si el cambio toca `packages/api-contract/openapi.yaml`, revisá backend y app en el mismo trabajo.
+- No agregues dependencias (pub, Gradle, imágenes Docker) sin pedir confirmación.
+- No escribas secretos en archivos versionados.
+- Al terminar, indicá el comando para verificar (test, analyze, build).
+- Explicá en 2–3 líneas el porqué de las decisiones: el objetivo es aprender.
