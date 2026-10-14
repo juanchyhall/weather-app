@@ -1,52 +1,57 @@
-# Clima Monorepo
+# Weather App — clima de capitales
 
-App móvil de clima en tiempo real para aprender a trabajar con **Cursor** (agentes, reglas, skills, MCP) sobre un stack **Flutter + Dart + Kotlin**, con **Docker**, **GitHub** y **Jira**.
+App móvil que muestra el clima actual y el pronóstico de 7 días de las capitales de los 195 países, con filtros por clima (soleado, lluvioso, frío, cálido, con tormentas…) y capitales favoritas.
 
-> Estado: **estructura base**. No hay código de funcionalidades todavía: se escribe con Cursor siguiendo el backlog de `docs/04-backlog-inicial.md`.
+> Estado: el backend está en construcción y la app todavía no existe.
 
-## Qué hace la app (objetivo)
+## Estructura
 
-- Buscar ciudades de cualquier región y guardarlas como favoritas.
-- Ver el clima actual y el pronóstico de cada ciudad.
-- Recibir actualizaciones **en tiempo real** (WebSocket) sin recargar.
-- Ver el clima de la ciudad principal en un **widget nativo de Android** (Kotlin).
+| Carpeta | Tecnología | Rol |
+|---|---|---|
+| `apps/mobile` | Flutter / Dart, con código nativo Android en Kotlin | App móvil (pendiente) |
+| `services/weather-api` | Kotlin + Ktor | API REST: capitales, clima y caché sobre Open-Meteo (en construcción) |
+| `packages/api-contract` | OpenAPI 3.1 | Contrato entre la app y el backend |
+| `docs` | Markdown | Arquitectura y decisiones (ADR) |
 
-## Mapa del monorepo
+El contrato es la fuente de verdad: cualquier cambio de endpoint empieza en `packages/api-contract/openapi.yaml`.
 
-```
-clima-monorepo/
-├── AGENTS.md                 ← instrucciones generales para cualquier agente de IA
-├── .cursor/                  ← configuración de Cursor (versionada con el repo)
-│   ├── rules/                ← reglas .mdc (siempre, por archivo o a pedido)
-│   ├── agents/               ← subagentes propios (planificador, revisor, tester)
-│   ├── skills/               ← procedimientos reutilizables (SKILL.md)
-│   ├── commands/             ← comandos /slash propios
-│   └── mcp.json              ← conexión a GitHub y Jira vía MCP
-├── .cursorignore             ← lo que Cursor no debe indexar
-├── apps/
-│   └── mobile/               ← app Flutter (Dart) + código nativo Android (Kotlin)
-├── services/
-│   └── weather-api/          ← backend Kotlin + Ktor (API REST + WebSocket)
-├── packages/
-│   └── api-contract/         ← contrato OpenAPI compartido entre app y backend
-├── docs/                     ← arquitectura, guía de Cursor, flujo de trabajo, backlog, ADRs
-├── .github/                  ← CI por carpeta y plantilla de PR
-├── .vscode/extensions.json   ← extensiones recomendadas (Cursor las ofrece al abrir)
-├── docker-compose.yml        ← backend + Redis para desarrollo local
-├── .env.example              ← variables (copiar a .env)
-├── .gitattributes            ← finales de línea (evita errores de gradlew en Docker)
-├── .editorconfig
-└── .gitignore
+## Requisitos
+
+| Herramienta | Para qué |
+|---|---|
+| Git | Clonar el repo |
+| JDK 21 (Temurin) | Compilar y correr el backend |
+| Docker con Compose | Levantar backend y Redis |
+| Node.js (opcional) | Validar el contrato |
+| Flutter SDK (canal stable) y Android Studio | Solo para la app |
+
+## Primer arranque
+
+```bash
+git clone https://github.com/juanchyhall/weather-app.git
+cd weather-app
+cp .env.example .env    # en Windows: copy .env.example .env
 ```
 
-## Por dónde empezar
+`.env` no se versiona. Los valores de `.env.example` sirven para desarrollo local.
 
-1. `docs/05-entorno-local.md` — instalar lo necesario.
-2. `docs/01-arquitectura.md` — entender cómo encajan las piezas.
-3. `docs/02-guia-cursor.md` — aprender Cursor con ejercicios sobre este repo.
-4. `docs/03-flujo-trabajo.md` — ramas, commits, PR y Jira.
-5. `docs/04-backlog-inicial.md` — cargar las historias en Jira y arrancar por `CLIMA-1`.
+## Levantar el backend
+
+Esta sección se completa cuando el proyecto del backend esté creado.
+
+## Validar el contrato
+
+```bash
+npx @redocly/cli lint packages/api-contract/openapi.yaml
+```
+
+## Problemas frecuentes
+
+| Síntoma | Causa | Solución |
+|---|---|---|
+| `docker compose` avisa que falta `.env` | No se copió el ejemplo | Copiar `.env.example` a `.env` |
+| `/bin/sh: ./gradlew: not found` dentro de Docker | Finales de línea CRLF en un clon de Windows | `.gitattributes` lo evita; en un clon viejo, `git add --renormalize .` |
 
 ## Fuente de datos
 
-[Open-Meteo](https://open-meteo.com/): gratis para uso no comercial y sin API key. Ver `docs/adr/0002-open-meteo.md`.
+[Open-Meteo](https://open-meteo.com/): gratis para uso no comercial y sin API key. Los datos se publican bajo CC BY 4.0. Ver `docs/adr/0002-open-meteo.md`.
